@@ -1,0 +1,143 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Georgia', serif;
+    background: linear-gradient(135deg, #f5f0e8 0%, #e8e0d5 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 800px;
+    background: rgba(255, 252, 245, 0.95);
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.header {
+    text-align: center;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #d4c5b2;
+    margin-bottom: 25px;
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    color: #2c1810;
+}
+
+.chat-box {
+    background: rgba(250, 247, 242, 0.7);
+    border-radius: 16px;
+    padding: 20px;
+    height: 400px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    border: 1px solid rgba(200, 180, 160, 0.25);
+}
+
+.message {
+    margin-bottom: 16px;
+    padding: 14px 20px;
+    border-radius: 14px;
+    line-height: 1.6;
+}
+
+.message.user {
+    background: #2c3e50;
+    color: white;
+    text-align: right;
+    margin-left: 40px;
+}
+
+.message.socrates {
+    background: #f0e8df;
+    color: #2c1810;
+    margin-right: 40px;
+}
+
+.input-area {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: white;
+    padding: 6px;
+    border-radius: 16px;
+    border: 2px solid rgba(200, 180, 160, 0.2);
+}
+
+.input-area input {
+    flex: 1;
+    padding: 14px 18px;
+    border: none;
+    background: transparent;
+    font-family: 'Georgia', serif;
+    font-size: 1rem;
+    outline: none;
+}
+
+.input-area button {
+    padding: 12px 28px;
+    background: #2c1810;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Georgia', serif;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.input-area button:hover {
+    background: #3d2b1f;
+    transform: translateY(-2px);
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.controls button {
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid #d4c5b2;
+    border-radius: 20px;
+    color: #6b5b4e;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.controls button:hover {
+    background: #2c1810;
+    color: white;
+}
+
+.controls .badge {
+    padding: 6px 14px;
+    background: rgba(44, 24, 16, 0.06);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: #6b5b4e;
+}
+
+.footer {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(200, 180, 160, 0.2);
+    text-align: center;
+    font-size: 0.8rem;
+    color: #a89888;
+}
