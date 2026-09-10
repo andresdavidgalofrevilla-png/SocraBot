@@ -4,53 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏛️ Socrabot - Diálogo Socrático</title>
-    
-    <!-- ===== RUTAS CORREGIDAS ===== -->
-    <!-- Usando url_for de Flask para rutas correctas -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
-    <!-- ESTILOS DE RESPALDO (por si el CSS no carga) -->
-    <style>
-        /* Estilos mínimos para que se vea bien aunque el CSS falle */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Georgia', serif; background: #f5f0e8; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 24px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); }
-        .header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid #d4c5b2; margin-bottom: 25px; }
-        .header h1 { font-size: 2.5rem; color: #2c1810; }
-        .chat-box { background: #faf7f2; border-radius: 16px; padding: 20px; height: 400px; overflow-y: auto; margin-bottom: 20px; border: 1px solid #e0d5c8; }
-        .message { margin-bottom: 16px; padding: 14px 20px; border-radius: 14px; line-height: 1.6; }
-        .message.user { background: #2c3e50; color: white; text-align: right; margin-left: 40px; }
-        .message.socrates { background: #f0e8df; color: #2c1810; margin-right: 40px; }
-        .input-area { display: flex; gap: 12px; background: white; padding: 6px; border-radius: 16px; border: 2px solid #d4c5b2; }
-        .input-area input { flex: 1; padding: 14px 18px; border: none; background: transparent; font-family: 'Georgia', serif; font-size: 1rem; outline: none; }
-        .input-area button { padding: 12px 28px; background: #2c1810; color: white; border: none; border-radius: 12px; font-family: 'Georgia', serif; font-size: 1rem; cursor: pointer; }
-        .input-area button:hover { background: #3d2b1f; transform: translateY(-2px); }
-        .controls { display: flex; gap: 10px; margin-top: 15px; justify-content: center; flex-wrap: wrap; }
-        .controls button { padding: 8px 18px; background: transparent; border: 1px solid #d4c5b2; border-radius: 20px; color: #6b5b4e; cursor: pointer; }
-        .controls button:hover { background: #2c1810; color: white; }
-        .controls .badge { padding: 6px 14px; background: rgba(44,24,16,0.06); border-radius: 20px; font-size: 0.8rem; color: #6b5b4e; }
-        .footer { margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0d5c8; text-align: center; font-size: 0.8rem; color: #a89888; }
-        .socrates-label { display: block; font-size: 0.7rem; color: #8a7a6a; margin-top: 6px; font-style: italic; }
-        .typing-indicator { display: inline-block; padding: 12px 20px; background: rgba(200,180,160,0.12); border-radius: 14px; color: #8a7a6a; font-style: italic; animation: pulse 1.5s ease-in-out infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .fade-in { animation: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    </style>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
 </head>
 <body>
     <div class="container">
-        <!-- HEADER -->
+        <!-- ===== HEADER ===== -->
         <div class="header">
-            <h1>🏛️ Socrabot</h1>
-            <div style="font-size: 1.1rem; color: #6b5b4e; font-style: italic; margin-top: 6px;">
-                El arte de la mayéutica digital
-            </div>
-            <div style="font-size: 0.95rem; color: #8a7a6a; margin-top: 12px; padding: 12px 24px; background: rgba(44,24,16,0.04); border-radius: 14px; border-left: 4px solid #b8a392; font-style: italic;">
+            <h1>🏛️ <span class="socrabot-highlight">Socrabot</span></h1>
+            <div class="subtitle">✨ El arte de la mayéutica digital</div>
+            <div class="philosophy-quote">
                 "Solo sé que nada sé" — El método socrático de preguntar
             </div>
         </div>
 
-        <!-- CHAT -->
+        <!-- ===== CHAT BOX ===== -->
         <div class="chat-box" id="chat">
             <div class="message socrates fade-in">
                 Bienvenido, buscador de la verdad. 
@@ -62,21 +30,20 @@
             </div>
         </div>
 
-        <!-- INPUT -->
+        <!-- ===== INPUT AREA ===== -->
         <div class="input-area">
             <input 
                 type="text" 
                 id="userInput" 
                 placeholder="Escribe tu pensamiento, duda o afirmación..."
                 autocomplete="off"
+                aria-label="Escribe tu mensaje para Sócrates"
                 maxlength="500"
             >
-            <button onclick="dialogar()" id="sendButton">
-                ⚡ Preguntar
-            </button>
+            <button onclick="dialogar()" id="sendButton">⚡ Preguntar</button>
         </div>
 
-        <!-- CONTROLES -->
+        <!-- ===== CONTROLES ===== -->
         <div class="controls">
             <button onclick="limpiarChat()">🗑️ Limpiar diálogo</button>
             <button onclick="ejemploFilosofico()">💡 Pensamiento filosófico</button>
@@ -85,130 +52,60 @@
             <span class="badge">🧠 Mayéutica activa</span>
         </div>
 
-        <!-- FOOTER -->
+        <!-- ===== SECCIÓN MÁS OPCIONES ===== -->
+        <div class="more-options">
+            <details>
+                <summary>📚 Más Opciones</summary>
+                <div class="options-content">
+                    
+                    <!-- Créditos -->
+                    <div class="credits-section">
+                        <h3>👨‍💻 Desarrollado/Creado por:</h3>
+                        <ul class="credits-list">
+                            <li><strong>Andrés David Galofre Villa</strong> — Lógica socrática y backend</li>
+                            <li><strong>Maria Fernanda Serje</strong> — Diseño de interfaz y CSS</li>
+                            <li><strong>Miguel Muñoz</strong> — Integración y pruebas</li>
+                            <li><strong>Sharon Michelle Hernandez</strong> — Documentación y despliegue</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Información del proyecto -->
+                    <div class="info-section">
+                        <h3>📖 Sobre SocraBot</h3>
+                        <p>Un proyecto educativo que implementa el método mayéutico de Sócrates 
+                        para fomentar el pensamiento crítico a través del diálogo y las preguntas.</p>
+                    </div>
+
+                    <!-- Tecnologías usadas -->
+                    <div class="info-section">
+                        <h3>🛠️ Tecnologías utilizadas</h3>
+                        <ul class="credits-list">
+                            <li><strong>Python + Flask</strong> — Backend y lógica del bot</li>
+                            <li><strong>HTML + CSS + JavaScript</strong> — Interfaz de usuario</li>
+                            <li><strong>Render</strong> — Hosting en la nube</li>
+                            <li><strong>GitHub</strong> — Control de versiones</li>
+                        </ul>
+                    </div>
+
+                    <!-- Cita final -->
+                    <div class="info-section">
+                        <h3>💭 Filosofía del proyecto</h3>
+                        <p><em>"El conocimiento no se da, se despierta. No enseñamos respuestas, 
+                        enseñamos a preguntar."</em></p>
+                    </div>
+                    
+                </div>
+            </details>
+        </div>
+
+        <!-- ===== FOOTER ===== -->
         <div class="footer">
             <span>⚡</span> El conocimiento está en las preguntas, no en las respuestas <span>⚡</span>
+            <span class="footer-quote">— Inspirado en el método socrático</span>
         </div>
     </div>
 
     <!-- ===== SCRIPTS ===== -->
-    <!-- Cargar JavaScript de Flask -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-    <!-- ===== JAVASCRIPT DE RESPALDO (si el archivo no carga) ===== -->
-    <script>
-    // Si el script externo no carga, estas funciones de respaldo funcionarán
-    if (typeof dialogar === 'undefined') {
-        console.log('⚠️ Usando funciones de respaldo (script.js no cargó)');
-        
-        // Funciones de respaldo
-        window.dialogar = async function() {
-            const input = document.getElementById('userInput');
-            const chat = document.getElementById('chat');
-            const texto = input.value.trim();
-            
-            if (!texto) {
-                alert('Escribe algo por favor');
-                return;
-            }
-
-            // Mostrar mensaje del usuario
-            const userMsg = document.createElement('div');
-            userMsg.className = 'message user fade-in';
-            userMsg.textContent = texto;
-            chat.appendChild(userMsg);
-            input.value = '';
-            chat.scrollTop = chat.scrollHeight;
-
-            // Mostrar indicador de escritura
-            const typing = document.createElement('div');
-            typing.className = 'typing-indicator';
-            typing.textContent = '🤔 Sócrates está reflexionando...';
-            chat.appendChild(typing);
-            chat.scrollTop = chat.scrollHeight;
-
-            try {
-                const response = await fetch('/preguntar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ texto: texto })
-                });
-                const data = await response.json();
-                
-                // Eliminar indicador
-                typing.remove();
-                
-                // Mostrar respuesta
-                const socratesMsg = document.createElement('div');
-                socratesMsg.className = 'message socrates fade-in';
-                socratesMsg.innerHTML = (data.respuesta || 'Interesante... ¿Puedes elaborar más?') + 
-                    '<span class="socrates-label">— Sócrates</span>';
-                chat.appendChild(socratesMsg);
-                chat.scrollTop = chat.scrollHeight;
-            } catch (error) {
-                typing.remove();
-                const errorMsg = document.createElement('div');
-                errorMsg.className = 'message socrates fade-in';
-                errorMsg.textContent = '⚠️ Error: ' + error.message;
-                chat.appendChild(errorMsg);
-                chat.scrollTop = chat.scrollHeight;
-            }
-        };
-
-        window.limpiarChat = function() {
-            const chat = document.getElementById('chat');
-            chat.innerHTML = '';
-            const msg = document.createElement('div');
-            msg.className = 'message socrates fade-in';
-            msg.innerHTML = 'Diálogo reiniciado. ¿Qué te gustaría explorar?' + 
-                '<span class="socrates-label">— Sócrates</span>';
-            chat.appendChild(msg);
-        };
-
-        window.ejemploFilosofico = function() {
-            const ejemplos = [
-                "¿Qué es la felicidad y cómo se alcanza?",
-                "¿El conocimiento verdadero viene de la razón o de la experiencia?",
-                "¿Qué significa ser una buena persona?"
-            ];
-            document.getElementById('userInput').value = ejemplos[Math.floor(Math.random() * ejemplos.length)];
-            dialogar();
-        };
-
-        window.ejemploDuda = function() {
-            const dudas = [
-                "¿Cómo puedo estar seguro de lo que sé?",
-                "¿Por qué tememos tanto a la incertidumbre?",
-                "¿Qué es lo que realmente importa en la vida?"
-            ];
-            document.getElementById('userInput').value = dudas[Math.floor(Math.random() * dudas.length)];
-            dialogar();
-        };
-
-        window.exportarChat = function() {
-            const chat = document.getElementById('chat');
-            const mensajes = chat.querySelectorAll('.message');
-            let texto = '🏛️ SOCRABOT - DIÁLOGO\n\n';
-            mensajes.forEach(msg => {
-                const tipo = msg.classList.contains('user') ? 'Tú' : 'Sócrates';
-                texto += `${tipo}: ${msg.textContent.replace('— Sócrates', '').trim()}\n`;
-            });
-            
-            const blob = new Blob([texto], { type: 'text/plain' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'dialogo_socratico.txt';
-            a.click();
-        };
-
-        // Evento Enter
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('userInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    dialogar();
-                }
-            });
-        });
-    }
-    </script>
 </body>
 </html>
