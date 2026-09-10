@@ -1,14 +1,15 @@
 from flask import Flask, render_template, request, jsonify
 import os
+import random
+import time
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
 load_dotenv()
 
-# ===== IMPORTAR NUEVA LIBRERÍA =====
+# ===== IMPORTAR GEMINI =====
 try:
     from google import genai
-    from google.genai import types
     GEMINI_DISPONIBLE = True
 except ImportError:
     GEMINI_DISPONIBLE = False
@@ -54,32 +55,35 @@ PREGUNTAS_FALLBACK = [
     "¿Por qué es importante para ti?",
     "¿Qué evidencia tienes para afirmar eso?",
     "¿Has considerado el punto de vista opuesto?",
+    "Dime, ¿acaso no es esa la pregunta que deberías hacerte a ti mismo?",
+    "¿Y si lo que crees saber no fuera más que una sombra de la verdad?",
 ]
 
-import time
-
-def generar_respuesta_ia(texto_usuario, intentos=3):
-    """Genera respuesta socrática usando Gemini con reintentos"""
-    if GEMINI_DISPONIBLE:
-        for intento in range(intentos):
-            try:
-                prompt = PROMPT_SOCRATES.format(texto=texto_usuario)
-                response = client.models.generate_content(
-                    model='gemini-flash-latest',
-                    contents=prompt
-                )
-                return response.text.strip()
-            except Exception as e:
-                print(f"⚠️ Intento {intento + 1}/{intentos} falló: {e}")
-                if intento < intentos - 1:
-                    time.sleep(1.5)  # Esperar 1.5 segundos antes de reintentar
-                else:
-                    print("❌ Todos los intentos fallaron. Usando fallback.")
-                    import random
-                    return random.choice(PREGUNTAS_FALLBACK)
-    else:
-        import random
+# ===== GENERAR RESPUESTA =====
+def generar_respuesta_ia(texto_usuario, intentos=2):
+    """Genera respuesta socrática usando Gemini con reintentos y timeout"""
+    if not GEMINI_DISPONIBLE:
         return random.choice(PREGUNTAS_FALLBACK)
+    
+    for intento in range(intentos):
+        try:
+            prompt = PROMPT_SOCRATES.format(texto=texto_usuario)
+            response = client.models.generate_content(
+                model='gemini-flash-latest',
+                contents=prompt
+            )
+            if response and response.text:
+                return response.text.strip()
+            else:
+                print(f"⚠️ Respuesta vacía en intento {intento + 1}")
+        except Exception as e:
+            print(f"⚠️ Intento {intento + 1}/{intentos} falló: {e}")
+            if intento < intentos - 1:
+                time.sleep(1)
+    
+    # Si todo falla, usar fallback
+    print("❌ Todos los intentos fallaron. Usando fallback.")
+    return random.choice(PREGUNTAS_FALLBACK)
 
 # ===== RUTAS =====
 @app.route('/')
@@ -90,12 +94,20 @@ def index():
 def preguntar():
     try:
         data = request.get_json()
+        
+        if not data:
+            return jsonify({'respuesta': 'Dime, ¿qué querías preguntarme?'}), 200
+        
         texto = data.get('texto', '').strip()
         
         if not texto:
-            return jsonify({'error': 'El texto no puede estar vacío'}), 400
+            return jsonify({'respuesta': 'El silencio también es una respuesta. ¿Qué piensas?'}), 200
         
         respuesta = generar_respuesta_ia(texto)
+        
+        # GARANTIZAR que siempre devolvemos algo válido
+        if not respuesta:
+            respuesta = random.choice(PREGUNTAS_FALLBACK)
         
         return jsonify({
             'respuesta': respuesta,
@@ -103,7 +115,12 @@ def preguntar():
         })
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Error en /preguntar: {e}")
+        # SIEMPRE devolver algo válido
+        return jsonify({
+            'respuesta': 'Perdona, mi mente se confunde. ¿Puedes repetir eso?',
+            'tipo': 'error'
+        }), 200
 
 @app.route('/reset', methods=['POST'])
 def reset():
