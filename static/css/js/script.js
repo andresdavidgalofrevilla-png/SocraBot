@@ -1,5 +1,5 @@
 // ========================================
-// SOCRABOT - VERSIÓN AVANZADA
+// SOCRABOT - JAVASCRIPT COMPLETO
 // ========================================
 
 const CONFIG = {
@@ -18,6 +18,7 @@ const DOM = {
     sendButton: document.getElementById('sendButton'),
 };
 
+// ===== FUNCIÓN PRINCIPAL =====
 async function dialogar() {
     if (esperandoRespuesta) return;
     
@@ -57,13 +58,7 @@ async function dialogar() {
         } else {
             const delay = Math.random() * (CONFIG.TYPING_DELAY_MAX - CONFIG.TYPING_DELAY_MIN) + CONFIG.TYPING_DELAY_MIN;
             setTimeout(() => {
-                // Si el usuario está haciendo preguntas, cambiar estilo de respuesta
-                if (data.usuario_pregunta && data.turnos > 5) {
-                    agregarMensaje('🌟 ' + data.respuesta, 'socrates');
-                } else {
-                    agregarMensaje(data.respuesta, 'socrates');
-                }
-                
+                agregarMensaje(data.respuesta, 'socrates');
                 historialConversacion.push({ rol: 'socrates', texto: data.respuesta });
                 esperandoRespuesta = false;
                 DOM.sendButton.disabled = false;
@@ -78,8 +73,7 @@ async function dialogar() {
     }
 }
 
-// ===== FUNCIONES DE INTERFAZ =====
-
+// ===== AGREGAR MENSAJES =====
 function agregarMensaje(texto, tipo, opciones = {}) {
     const div = document.createElement('div');
     div.className = `message ${tipo} fade-in`;
@@ -87,17 +81,9 @@ function agregarMensaje(texto, tipo, opciones = {}) {
     const textoFormateado = texto.replace(/\n/g, '<br>');
     
     if (tipo === 'socrates') {
-        // Detectar si es un mensaje de celebración (empieza con 🌟)
-        if (texto.startsWith('🌟')) {
-            div.innerHTML = `
-                <div style="background: linear-gradient(135deg, #f9f3e8, #f0e8df); padding: 16px; border-radius: 12px; border-left: 4px solid #f39c12;">
-                    ${textoFormateado}
-                </div>
-                <span class="socrates-label">— Sócrates</span>
-            `;
-        } else {
-            div.innerHTML = `${textoFormateado} <span class="socrates-label">— Sócrates</span>`;
-        }
+        div.innerHTML = `${textoFormateado} <span class="socrates-label">— Sócrates</span>`;
+    } else if (tipo === 'system') {
+        div.textContent = texto;
     } else {
         div.textContent = texto;
     }
@@ -110,13 +96,13 @@ function agregarMensaje(texto, tipo, opciones = {}) {
     return div;
 }
 
+// ===== INDICADOR DE ESCRITURA =====
 function mostrarIndicadorEscritura() {
     const id = 'typing-' + Date.now();
     const div = document.createElement('div');
     div.id = id;
     div.className = 'message socrates typing-indicator';
     
-    // Textos alternativos para el indicador
     const frases = [
         '🤔 Sócrates está reflexionando...',
         '🧠 Sócrates está pensando en su próxima pregunta...',
@@ -135,6 +121,7 @@ function ocultarIndicadorEscritura(id) {
     if (indicator) indicator.remove();
 }
 
+// ===== LIMPIAR CHAT =====
 function limpiarChat() {
     if (historialConversacion.length > 0 && !confirm('¿Seguro que quieres limpiar el diálogo?')) {
         return;
@@ -153,22 +140,7 @@ function limpiarChat() {
     } catch (e) {}
 }
 
-function cambiarEnfoque() {
-    const temas = [
-        "Hablemos de la verdad",
-        "¿Qué piensas sobre la justicia?",
-        "Exploremos el concepto de amor",
-        "¿Qué es la libertad para ti?",
-        "Hablemos de la muerte",
-        "¿Qué significa ser feliz?",
-        "¿Qué es el conocimiento?",
-        "¿Existe el destino?"
-    ];
-    DOM.userInput.value = temas[Math.floor(Math.random() * temas.length)];
-    DOM.userInput.focus();
-    setTimeout(dialogar, 300);
-}
-
+// ===== EJEMPLOS =====
 function ejemploFilosofico() {
     const ejemplos = [
         "¿Qué es la felicidad y cómo se alcanza?",
@@ -177,7 +149,10 @@ function ejemploFilosofico() {
         "¿Cómo sabemos lo que es real?",
         "¿El amor es un sentimiento o una elección?",
         "¿Qué es la justicia y cómo se aplica?",
-        "¿Qué papel juega la libertad en nuestra vida?"
+        "¿Qué papel juega la libertad en nuestra vida?",
+        "¿El ser humano es bueno por naturaleza?",
+        "¿Qué es la belleza y dónde se encuentra?",
+        "¿Cuál es el sentido de la existencia?"
     ];
     DOM.userInput.value = ejemplos[Math.floor(Math.random() * ejemplos.length)];
     DOM.userInput.focus();
@@ -190,73 +165,14 @@ function ejemploDuda() {
         "¿Por qué tememos tanto a la incertidumbre?",
         "¿Qué es lo que realmente importa en la vida?",
         "¿Cómo distinguir lo verdadero de lo falso?",
-        "¿Por qué es tan difícil conocerse a uno mismo?"
+        "¿Por qué es tan difícil conocerse a uno mismo?",
+        "¿Qué hay después de la muerte?",
+        "¿Por qué existe el sufrimiento?",
+        "¿Qué es la conciencia y cómo funciona?",
+        "¿Cómo sé que no estoy soñando?",
+        "¿Qué es la libertad y cómo se conquista?"
     ];
     DOM.userInput.value = dudas[Math.floor(Math.random() * dudas.length)];
     DOM.userInput.focus();
     setTimeout(dialogar, 300);
 }
-
-function exportarChat() {
-    const mensajes = DOM.chatBox.querySelectorAll('.message:not(.system)');
-    if (mensajes.length === 0) {
-        alert('No hay mensajes para exportar.');
-        return;
-    }
-    
-    let contenido = '🏛️ SOCRABOT - DIÁLOGO SOCRÁTICO\n';
-    contenido += '='.repeat(50) + '\n';
-    contenido += `Fecha: ${new Date().toLocaleString()}\n\n`;
-    
-    mensajes.forEach(msg => {
-        let texto = msg.textContent.trim();
-        // Limpiar etiquetas
-        texto = texto.replace('— Sócrates', '').trim();
-        
-        if (msg.classList.contains('user')) {
-            contenido += `🧑 Tú: ${texto}\n`;
-        } else if (msg.classList.contains('socrates')) {
-            contenido += `🎭 Sócrates: ${texto}\n`;
-        }
-    });
-    
-    contenido += '\n' + '='.repeat(50) + '\n';
-    contenido += 'El conocimiento está en las preguntas, no en las respuestas.';
-    
-    const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `dialogo_socratico_${Date.now()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-// ===== EVENTOS =====
-document.addEventListener('DOMContentLoaded', function() {
-    DOM.userInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            dialogar();
-        }
-    });
-    DOM.userInput.focus();
-    
-    // Agregar atajo con Ctrl+Enter
-    DOM.userInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && e.ctrlKey) {
-            e.preventDefault();
-            dialogar();
-        }
-    });
-});
-
-// ===== EXPORTAR FUNCIONES GLOBALES =====//
-window.dialogar = dialogar;
-window.limpiarChat = limpiarChat;
-window.cambiarEnfoque = cambiarEnfoque;
-window.ejemploFilosofico = ejemploFilosofico;
-window.ejemploDuda = ejemploDuda;
-window.exportarChat = exportarChat;
