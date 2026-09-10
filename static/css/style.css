@@ -206,7 +206,7 @@ body::before {
 }
 
 .message.user::before {
-    content: "🧑 ";
+    content: "User: ";
     font-size: 1.2rem;
 }
 
