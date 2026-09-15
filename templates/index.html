@@ -3,22 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏛️ Socrabot - Diálogo Socrático</title>
+    <title>🏛️ SocraBot - El Filósofo Digital</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
 </head>
 <body>
+    <!-- ===== SÓCRATES FLOTANTE ===== -->
+    <div class="socrates-float" id="socratesFloat">
+        <div class="socrates-avatar" id="socratesAvatar">
+            <img id="socratesImg" src="{{ url_for('static', filename='img/socrates-neutral.png') }}" alt="Sócrates">
+        </div>
+        <div class="socrates-bubble" id="socratesBubble">
+            <p id="socratesText">¡Saludos, buscador de la verdad!</p>
+            <span class="bubble-tail"></span>
+        </div>
+    </div>
+
+    <!-- ===== BOTÓN TEMA ===== -->
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">
+        <span class="theme-icon" id="themeIcon">🌙</span>
+    </button>
+
     <div class="container">
-        <!-- ===== HEADER ===== -->
+        <!-- HEADER -->
         <div class="header">
-            <h1>🏛️ <span class="socrabot-highlight">Socrabot</span></h1>
+            <h1>🏛️ <span class="socrabot-highlight">SocraBot</span></h1>
             <div class="subtitle">✨ El arte de la mayéutica digital</div>
             <div class="philosophy-quote">
                 "Solo sé que nada sé" — El método socrático de preguntar
             </div>
         </div>
 
-        <!-- ===== CHAT BOX ===== -->
+        <!-- CHAT -->
         <div class="chat-box" id="chat">
             <div class="message socrates fade-in">
                 Bienvenido, buscador de la verdad. 
@@ -30,20 +46,19 @@
             </div>
         </div>
 
-        <!-- ===== INPUT AREA ===== -->
+        <!-- INPUT -->
         <div class="input-area">
             <input 
                 type="text" 
                 id="userInput" 
                 placeholder="Escribe tu pensamiento, duda o afirmación..."
                 autocomplete="off"
-                aria-label="Escribe tu mensaje para Sócrates"
                 maxlength="500"
             >
             <button onclick="dialogar()" id="sendButton">⚡ Preguntar</button>
         </div>
 
-        <!-- ===== CONTROLES ===== -->
+        <!-- CONTROLES -->
         <div class="controls">
             <button onclick="limpiarChat()">🗑️ Limpiar diálogo</button>
             <button onclick="ejemploFilosofico()">💡 Pensamiento filosófico</button>
@@ -52,60 +67,45 @@
             <span class="badge">🧠 Mayéutica activa</span>
         </div>
 
-        <!-- ===== SECCIÓN MÁS OPCIONES ===== -->
+        <!-- MÁS OPCIONES -->
         <div class="more-options">
             <details>
                 <summary>📚 Más Opciones</summary>
                 <div class="options-content">
-                    
-                    <!-- Créditos -->
                     <div class="credits-section">
-                        <h3>👨‍💻 Desarrollado/Creado por:</h3>
+                        <h3>👨‍💻 Desarrollado por:</h3>
                         <ul class="credits-list">
                             <li><strong>Andrés David Galofre Villa</strong> — Lógica socrática y backend</li>
                             <li><strong>Maria Fernanda Serje</strong> — Diseño de interfaz y CSS</li>
                             <li><strong>Miguel Muñoz</strong> — Integración y pruebas</li>
-                            <li><strong>Sharon Michelle Hernandez</strong> — Documentación y despliegue</li>
+                            <li><strong>Sharon Hernandez</strong> — Documentación y despliegue</li>
                         </ul>
                     </div>
-                    
-                    <!-- Información del proyecto -->
                     <div class="info-section">
                         <h3>📖 Sobre SocraBot</h3>
                         <p>Un proyecto educativo que implementa el método mayéutico de Sócrates 
-                        para fomentar el pensamiento crítico a través del diálogo y las preguntas.</p>
+                        mediante inteligencia artificial para fomentar el pensamiento crítico.</p>
                     </div>
-
-                    <!-- Tecnologías usadas -->
                     <div class="info-section">
                         <h3>🛠️ Tecnologías utilizadas</h3>
                         <ul class="credits-list">
-                            <li><strong>Python + Flask</strong> — Backend y lógica del bot</li>
-                            <li><strong>HTML + CSS + JavaScript</strong> — Interfaz de usuario</li>
+                            <li><strong>Python + Flask</strong> — Backend</li>
+                            <li><strong>HTML + CSS + JavaScript</strong> — Frontend</li>
+                            <li><strong>Groq + Qwen 3.8</strong> — Inteligencia Artificial</li>
                             <li><strong>Render</strong> — Hosting en la nube</li>
-                            <li><strong>GitHub</strong> — Control de versiones</li>
                         </ul>
                     </div>
-
-                    <!-- Cita final -->
-                    <div class="info-section">
-                        <h3>💭 Filosofía del proyecto</h3>
-                        <p><em>"El conocimiento no se da, se despierta. No enseñamos respuestas, 
-                        enseñamos a preguntar."</em></p>
-                    </div>
-                    
                 </div>
             </details>
         </div>
 
-        <!-- ===== FOOTER ===== -->
+        <!-- FOOTER -->
         <div class="footer">
             <span>⚡</span> El conocimiento está en las preguntas, no en las respuestas <span>⚡</span>
             <span class="footer-quote">— Inspirado en el método socrático</span>
         </div>
     </div>
 
-    <!-- ===== SCRIPTS ===== -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

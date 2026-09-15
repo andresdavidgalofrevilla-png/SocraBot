@@ -1,64 +1,224 @@
 // ========================================
-// SOCRABOT - JAVASCRIPT COMPLETO
-// Con manejo robusto de errores
+// SOCRABOT - LÓGICA DE SÓCRATES
 // ========================================
 
-// ===== CONFIGURACIÓN =====
 const CONFIG = {
     API_URL: '/preguntar',
     RESET_URL: '/reset',
     TYPING_DELAY_MIN: 600,
     TYPING_DELAY_MAX: 1200,
-    MAX_HISTORY: 100,
+    INACTIVITY_TIME: 15000,
+    BUBBLE_DURATION: 6000,
+    BLINK_INTERVAL_MIN: 3000,
+    BLINK_INTERVAL_MAX: 6000,
+    BLINK_DURATION: 150,
+    TALK_FRAME_INTERVAL: 150,
 };
 
-// ===== ESTADO =====
 let historialConversacion = [];
 let esperandoRespuesta = false;
+let inactivityTimer = null;
+let bubbleTimer = null;
+let bubbleOcupada = false;
+let blinkTimer = null;
+let talkTimer = null;
+let estadoActual = 'idle';
 
-// ===== ELEMENTOS DOM =====
 const DOM = {
     chatBox: document.getElementById('chat'),
     userInput: document.getElementById('userInput'),
     sendButton: document.getElementById('sendButton'),
+    socratesAvatar: document.getElementById('socratesAvatar'),
+    socratesImg: document.getElementById('socratesImg'),
+    socratesBubble: document.getElementById('socratesBubble'),
+    socratesText: document.getElementById('socratesText'),
+    themeIcon: document.getElementById('themeIcon'),
 };
 
-// ========================================
-// FUNCIÓN PRINCIPAL
-// ========================================
+const SPRITES = {
+    idle: '/static/img/socrates-idle.png',
+    speaking: '/static/img/socrates-speaking.png',
+    thinking: '/static/img/socrates-thinking.png',
+    speakingBlink: '/static/img/socrates-speaking-blink.png',
+    listening: '/static/img/socrates-listening.png',
+    neutral: '/static/img/socrates-neutral.png',
+};
+
+const FRASES_SALUDO = [
+    "¡Saludos, buscador de la verdad!",
+    "Bienvenido, amigo. ¿Qué te preocupa hoy?",
+    "Hola, caminante. ¿Has venido a examinar tu alma?",
+    "El conocimiento no se da, se despierta. ¿Empezamos?",
+    "Solo sé que no sé nada. ¿Y tú qué sabes?",
+];
+
+const FRASES_INACTIVIDAD = [
+    "¿Sigues ahí, amigo? El silencio también es una respuesta.",
+    "Mientras callas, tus pensamientos hablan. ¿Qué dicen?",
+    "¿Sabes? La duda es el principio de la sabiduría.",
+    "Una vida sin examen no merece ser vivida.",
+    "¿Te has preguntado por qué haces lo que haces?",
+    "El tiempo pasa, pero las preguntas quedan.",
+    "¿Qué es lo que realmente buscas?",
+    "Solo sé que no sé nada. ¿Y tú?",
+    "La sabiduría comienza con una pregunta.",
+    "¿Cuánto tiempo ha pasado desde que te cuestionaste algo?",
+];
+
+const FRASES_PENSANDO = [
+    "🤔 Déjame pensar...",
+    "🧠 Reflexionando...",
+    "💭 Meditando tu pregunta...",
+    "📚 Consultando mi sabiduría...",
+];
+
+// ===== CAMBIAR SPRITE =====
+function cambiarSprite(ruta) {
+    if (!DOM.socratesImg) return;
+    if (DOM.socratesImg.src.includes(ruta.split('/').pop())) return;
+    
+    DOM.socratesImg.style.opacity = '0';
+    setTimeout(() => {
+        DOM.socratesImg.src = ruta;
+        DOM.socratesImg.style.opacity = '1';
+    }, 80);
+}
+
+// ===== PARPADEO (solo en reposo) =====
+function iniciarParpadeo() {
+    clearTimeout(blinkTimer);
+    const intervalo = Math.random() * (CONFIG.BLINK_INTERVAL_MAX - CONFIG.BLINK_INTERVAL_MIN) + CONFIG.BLINK_INTERVAL_MIN;
+    
+    blinkTimer = setTimeout(() => {
+        if (estadoActual === 'idle' || estadoActual === 'neutral') {
+            const spriteOriginal = estadoActual === 'idle' ? SPRITES.idle : SPRITES.neutral;
+            cambiarSprite(SPRITES.thinking);
+            setTimeout(() => {
+                cambiarSprite(spriteOriginal);
+                iniciarParpadeo();
+            }, CONFIG.BLINK_DURATION);
+        } else {
+            iniciarParpadeo();
+        }
+    }, intervalo);
+}
+
+// ===== HABLAR (solo alterna speaking y speakingBlink) =====
+function iniciarHablar() {
+    clearInterval(talkTimer);
+    let frameBoca = 'abierta';
+    
+    talkTimer = setInterval(() => {
+        if (estadoActual !== 'speaking') {
+            clearInterval(talkTimer);
+            return;
+        }
+        
+        frameBoca = frameBoca === 'abierta' ? 'cerrada' : 'abierta';
+        
+        if (frameBoca === 'abierta') {
+            const debeParpadear = Math.random() < 0.1;
+            cambiarSprite(debeParpadear ? SPRITES.speakingBlink : SPRITES.speaking);
+        } else {
+            cambiarSprite(SPRITES.speaking);
+        }
+    }, CONFIG.TALK_FRAME_INTERVAL);
+}
+
+function detenerHablar() {
+    clearInterval(talkTimer);
+}
+
+// ===== ESTADO =====
+function setEstadoSocrates(estado) {
+    estadoActual = estado || 'idle';
+    
+    DOM.socratesAvatar.classList.remove('thinking', 'speaking', 'idle');
+    detenerHablar();
+    clearTimeout(blinkTimer);
+    
+    switch (estado) {
+        case 'thinking':
+            cambiarSprite(SPRITES.thinking);
+            DOM.socratesAvatar.classList.add('thinking');
+            break;
+        case 'speaking':
+            cambiarSprite(SPRITES.speaking);
+            DOM.socratesAvatar.classList.add('speaking');
+            iniciarHablar();
+            break;
+        case 'neutral':
+            cambiarSprite(SPRITES.neutral);
+            iniciarParpadeo();
+            break;
+        case 'idle':
+        default:
+            cambiarSprite(SPRITES.idle);
+            DOM.socratesAvatar.classList.add('idle');
+            iniciarParpadeo();
+            break;
+    }
+}
+
+// ===== BURBUJA =====
+function mostrarBurbuja(texto, duracion = CONFIG.BUBBLE_DURATION, alTerminar = null) {
+    if (bubbleOcupada) return;
+    bubbleOcupada = true;
+    
+    DOM.socratesText.textContent = texto;
+    DOM.socratesBubble.classList.add('visible');
+    
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(() => {
+        DOM.socratesBubble.classList.remove('visible');
+        bubbleOcupada = false;
+        if (alTerminar) alTerminar();
+    }, duracion);
+}
+
+// ===== INACTIVIDAD =====
+function iniciarTemporizadorInactividad() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+        if (!esperandoRespuesta && !bubbleOcupada) {
+            setEstadoSocrates('idle');
+            const frase = FRASES_INACTIVIDAD[Math.floor(Math.random() * FRASES_INACTIVIDAD.length)];
+            mostrarBurbuja(frase);
+        }
+        iniciarTemporizadorInactividad();
+    }, CONFIG.INACTIVITY_TIME);
+}
+
+function reiniciarTemporizadorInactividad() {
+    iniciarTemporizadorInactividad();
+}
+
+// ===== DIÁLOGO =====
 async function dialogar() {
-    // Prevenir múltiples envíos
     if (esperandoRespuesta) return;
     
     const texto = DOM.userInput.value.trim();
-    
-    // Validar entrada
     if (!texto) {
         DOM.userInput.style.borderColor = '#c0392b';
         setTimeout(() => DOM.userInput.style.borderColor = '', 1000);
         return;
     }
 
-    // Limpiar input y deshabilitar botón
     DOM.userInput.value = '';
     DOM.userInput.focus();
     esperandoRespuesta = true;
     DOM.sendButton.disabled = true;
 
-    // Mostrar mensaje del usuario
     agregarMensaje(texto, 'user');
     historialConversacion.push({ rol: 'usuario', texto: texto });
-    
-    // Mantener historial limitado
-    if (historialConversacion.length > CONFIG.MAX_HISTORY) {
-        historialConversacion.shift();
-    }
 
-    // Mostrar indicador de escritura
+    setEstadoSocrates('thinking');
+    bubbleOcupada = false;
+    mostrarBurbuja(FRASES_PENSANDO[Math.floor(Math.random() * FRASES_PENSANDO.length)], 3000);
+
     const typingId = mostrarIndicadorEscritura();
 
     try {
-        // Enviar al servidor
         const response = await fetch(CONFIG.API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -68,135 +228,83 @@ async function dialogar() {
             })
         });
 
-        // Verificar que la respuesta HTTP es OK
-        if (!response.ok) {
-            throw new Error(`Error del servidor: ${response.status}`);
-        }
-
-        // Leer el texto primero (evita "Unexpected end of JSON input")
         const textoRespuesta = await response.text();
-        
-        // Verificar que no está vacío
-        if (!textoRespuesta || textoRespuesta.trim() === '') {
-            throw new Error('Respuesta vacía del servidor');
-        }
+        if (!textoRespuesta) throw new Error('Respuesta vacía');
 
-        // Parsear JSON de forma segura
-        let data;
-        try {
-            data = JSON.parse(textoRespuesta);
-        } catch (e) {
-            console.error('Error parseando JSON:', textoRespuesta);
-            throw new Error('Respuesta inválida del servidor');
-        }
-
-        // Ocultar indicador
+        const data = JSON.parse(textoRespuesta);
         ocultarIndicadorEscritura(typingId);
 
-        // Procesar respuesta
         if (data.error) {
             agregarMensaje(`⚠️ ${data.error}`, 'socrates');
+            setEstadoSocrates('idle');
+            esperandoRespuesta = false;
+            DOM.sendButton.disabled = false;
         } else {
-            const delay = Math.random() * (CONFIG.TYPING_DELAY_MAX - CONFIG.TYPING_DELAY_MIN) + CONFIG.TYPING_DELAY_MIN;
+            const delay = Math.random() * 800 + 400;
             setTimeout(() => {
-                const respuestaFinal = data.respuesta || 'Interesante... ¿Puedes elaborar más?';
+                const respuestaFinal = data.respuesta || 'Interesante...';
                 agregarMensaje(respuestaFinal, 'socrates');
                 historialConversacion.push({ rol: 'socrates', texto: respuestaFinal });
+                
+                setEstadoSocrates('speaking');
+                bubbleOcupada = false;
+                clearTimeout(bubbleTimer);
+                
+                mostrarBurbuja(respuestaFinal, CONFIG.BUBBLE_DURATION, () => {
+                    setEstadoSocrates('idle');
+                });
+                
                 esperandoRespuesta = false;
                 DOM.sendButton.disabled = false;
+                reiniciarTemporizadorInactividad();
             }, delay);
-            return; // Salir antes del finally
         }
 
     } catch (error) {
         ocultarIndicadorEscritura(typingId);
-        console.error('Error detallado:', error);
-        
-        // Mensaje amigable según el tipo de error
-        let mensajeError = 'Perdona, mi mente se nubla. ';
-        
-        if (error.message.includes('vacía')) {
-            mensajeError += '¿Puedes repetir tu pregunta?';
-        } else if (error.message.includes('inválida')) {
-            mensajeError += 'Estoy meditando. Intenta de nuevo.';
-        } else if (error.message.includes('servidor')) {
-            mensajeError += 'El oráculo está ocupado. Prueba otra vez.';
-        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-            mensajeError += 'No puedo alcanzar el oráculo. ¿Estás conectado?';
-        } else {
-            mensajeError += '¿Puedes preguntarme de nuevo?';
-        }
-        
-        agregarMensaje(mensajeError, 'socrates');
+        console.error('Error:', error);
+        agregarMensaje('Perdona, mi mente se nubla. ¿Puedes repetir eso?', 'socrates');
+        setEstadoSocrates('idle');
+        esperandoRespuesta = false;
+        DOM.sendButton.disabled = false;
     }
-
-    // Siempre reactivar el botón
-    esperandoRespuesta = false;
-    DOM.sendButton.disabled = false;
 }
 
-// ========================================
-// AGREGAR MENSAJES
-// ========================================
-function agregarMensaje(texto, tipo, opciones = {}) {
+// ===== AGREGAR MENSAJES =====
+function agregarMensaje(texto, tipo) {
     const div = document.createElement('div');
     div.className = `message ${tipo} fade-in`;
-    
-    // Convertir saltos de línea a <br>
     const textoFormateado = texto.replace(/\n/g, '<br>');
     
     if (tipo === 'socrates') {
         div.innerHTML = `${textoFormateado} <span class="socrates-label">— Sócrates</span>`;
-    } else if (tipo === 'system') {
-        div.textContent = texto;
     } else {
         div.textContent = texto;
     }
     
-    if (opciones.id) div.id = opciones.id;
-    if (opciones.className) div.classList.add(opciones.className);
-    
     DOM.chatBox.appendChild(div);
     DOM.chatBox.scrollTop = DOM.chatBox.scrollHeight;
-    
-    return div;
 }
 
-// ========================================
-// INDICADOR DE ESCRITURA
-// ========================================
 function mostrarIndicadorEscritura() {
     const id = 'typing-' + Date.now();
     const div = document.createElement('div');
     div.id = id;
     div.className = 'message socrates typing-indicator';
-    
-    const frases = [
-        '🤔 Sócrates está reflexionando...',
-        '🧠 Sócrates está pensando en su próxima pregunta...',
-        '💭 Sócrates está meditando...',
-        '📚 Sócrates está consultando su sabiduría...',
-        '🏛️ Sócrates está contemplando tu pregunta...'
-    ];
-    div.textContent = frases[Math.floor(Math.random() * frases.length)];
-    
+    div.textContent = FRASES_PENSANDO[Math.floor(Math.random() * FRASES_PENSANDO.length)];
     DOM.chatBox.appendChild(div);
     DOM.chatBox.scrollTop = DOM.chatBox.scrollHeight;
     return id;
 }
 
 function ocultarIndicadorEscritura(id) {
-    const indicator = document.getElementById(id);
-    if (indicator) indicator.remove();
+    const el = document.getElementById(id);
+    if (el) el.remove();
 }
 
-// ========================================
-// LIMPIAR CHAT
-// ========================================
+// ===== LIMPIAR =====
 function limpiarChat() {
-    if (historialConversacion.length > 0 && !confirm('¿Seguro que quieres limpiar el diálogo?')) {
-        return;
-    }
+    if (historialConversacion.length > 0 && !confirm('¿Seguro que quieres limpiar el diálogo?')) return;
     
     DOM.chatBox.innerHTML = '';
     historialConversacion = [];
@@ -206,17 +314,10 @@ function limpiarChat() {
         'socrates'
     );
     
-    // Resetear en el servidor
-    try {
-        fetch(CONFIG.RESET_URL, { method: 'POST' }).catch(() => {});
-    } catch (e) {
-        // Ignorar errores
-    }
+    fetch(CONFIG.RESET_URL, { method: 'POST' }).catch(() => {});
 }
 
-// ========================================
-// EJEMPLOS FILOSÓFICOS
-// ========================================
+// ===== EJEMPLOS =====
 function ejemploFilosofico() {
     const ejemplos = [
         "¿Qué es la felicidad y cómo se alcanza?",
@@ -226,11 +327,6 @@ function ejemploFilosofico() {
         "¿El amor es un sentimiento o una elección?",
         "¿Qué es la justicia y cómo se aplica?",
         "¿Qué papel juega la libertad en nuestra vida?",
-        "¿El ser humano es bueno por naturaleza?",
-        "¿Qué es la belleza y dónde se encuentra?",
-        "¿Cuál es el sentido de la existencia?",
-        "¿Puede la virtud enseñarse?",
-        "¿Qué es la verdad y cómo la reconocemos?"
     ];
     DOM.userInput.value = ejemplos[Math.floor(Math.random() * ejemplos.length)];
     DOM.userInput.focus();
@@ -244,89 +340,83 @@ function ejemploDuda() {
         "¿Qué es lo que realmente importa en la vida?",
         "¿Cómo distinguir lo verdadero de lo falso?",
         "¿Por qué es tan difícil conocerse a uno mismo?",
-        "¿Qué hay después de la muerte?",
-        "¿Por qué existe el sufrimiento?",
-        "¿Qué es la conciencia y cómo funciona?",
-        "¿Cómo sé que no estoy soñando?",
-        "¿Qué es la libertad y cómo se conquista?",
-        "¿Por qué hacemos lo que hacemos?",
-        "¿Qué sentido tiene la vida si todo termina?"
     ];
     DOM.userInput.value = dudas[Math.floor(Math.random() * dudas.length)];
     DOM.userInput.focus();
     setTimeout(dialogar, 300);
 }
 
-// ========================================
-// EXPORTAR DIÁLOGO
-// ========================================
+// ===== EXPORTAR =====
 function exportarChat() {
-    const mensajes = DOM.chatBox.querySelectorAll('.message:not(.system):not(.typing-indicator)');
-    
-    if (mensajes.length === 0) {
-        alert('No hay mensajes para exportar.');
-        return;
-    }
+    const mensajes = DOM.chatBox.querySelectorAll('.message:not(.typing-indicator)');
+    if (mensajes.length === 0) return alert('No hay mensajes para exportar.');
     
     let contenido = '🏛️ SOCRABOT - DIÁLOGO SOCRÁTICO\n';
     contenido += '='.repeat(50) + '\n';
-    contenido += `Fecha: ${new Date().toLocaleString()}\n`;
-    contenido += `Total de mensajes: ${mensajes.length}\n`;
-    contenido += '='.repeat(50) + '\n\n';
+    contenido += `Fecha: ${new Date().toLocaleString()}\n\n`;
     
     mensajes.forEach(msg => {
-        let texto = msg.textContent.trim();
-        texto = texto.replace('— Sócrates', '').trim();
-        
-        if (msg.classList.contains('user')) {
-            contenido += `🧑 Tú: ${texto}\n\n`;
-        } else if (msg.classList.contains('socrates')) {
-            contenido += `🎭 Sócrates: ${texto}\n\n`;
-        }
+        let texto = msg.textContent.replace('— Sócrates', '').trim();
+        if (msg.classList.contains('user')) contenido += `🧑 Tú: ${texto}\n\n`;
+        else if (msg.classList.contains('socrates')) contenido += `🎭 Sócrates: ${texto}\n\n`;
     });
     
     contenido += '='.repeat(50) + '\n';
-    contenido += 'El conocimiento está en las preguntas, no en las respuestas.\n';
-    contenido += '— Inspirado en el método socrático';
+    contenido += 'El conocimiento está en las preguntas, no en las respuestas.';
     
-    // Crear y descargar archivo
     const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `dialogo_socratico_${new Date().toISOString().slice(0, 10)}.txt`;
-    document.body.appendChild(a);
+    a.download = `dialogo_socratico_${Date.now()}.txt`;
     a.click();
-    document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
 
-// ========================================
-// EVENTOS
-// ========================================
-document.addEventListener('DOMContentLoaded', function() {
-    // Enter para enviar
-    DOM.userInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
+// ===== TEMA =====
+function toggleTheme() {
+    document.body.classList.toggle('dark-theme');
+    const esOscuro = document.body.classList.contains('dark-theme');
+    DOM.themeIcon.textContent = esOscuro ? '☀️' : '🌙';
+    localStorage.setItem('socrabot-theme', esOscuro ? 'dark' : 'light');
+}
+
+function cargarTema() {
+    const temaGuardado = localStorage.getItem('socrabot-theme');
+    if (temaGuardado === 'dark') {
+        document.body.classList.add('dark-theme');
+        DOM.themeIcon.textContent = '☀️';
+    }
+}
+
+// ===== EVENTOS =====
+document.addEventListener('DOMContentLoaded', () => {
+    cargarTema();
+    setEstadoSocrates('neutral');
+    
+    DOM.userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
             e.preventDefault();
             dialogar();
         }
     });
     
-    // Focus automático
     DOM.userInput.focus();
     
-    // Manejo de errores globales
-    window.addEventListener('error', function(e) {
-        console.error('Error global:', e.error);
-    });
+    setTimeout(() => {
+        mostrarBurbuja(FRASES_SALUDO[Math.floor(Math.random() * FRASES_SALUDO.length)]);
+    }, 1000);
+    
+    iniciarTemporizadorInactividad();
+    
+    document.addEventListener('mousemove', reiniciarTemporizadorInactividad);
+    document.addEventListener('keypress', reiniciarTemporizadorInactividad);
 });
 
-// ========================================
-// EXPORTAR FUNCIONES GLOBALES
-// ========================================
+// ===== GLOBALES =====
 window.dialogar = dialogar;
 window.limpiarChat = limpiarChat;
 window.ejemploFilosofico = ejemploFilosofico;
 window.ejemploDuda = ejemploDuda;
 window.exportarChat = exportarChat;
+window.toggleTheme = toggleTheme;
