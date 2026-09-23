@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>📚 Conversación de {{ nombre }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+    <style>
+        .conversacion-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background: var(--container-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border: 1px solid var(--container-border);
+        }
+        .conversacion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--accent);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .conversacion-header h1 {
+            color: var(--text-primary);
+            font-size: 1.8rem;
+        }
+        .conversacion-header a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .conversacion-header a:hover {
+            color: var(--accent);
+        }
+        .mensaje-historial {
+            padding: 12px 18px;
+            margin: 10px 0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            animation: fadeIn 0.3s ease;
+        }
+        .mensaje-historial.usuario {
+            background: var(--message-user-bg);
+            color: var(--message-user-text);
+            margin-left: 15%;
+        }
+        .mensaje-historial.socrates {
+            background: var(--message-socrates-bg);
+            color: var(--message-socrates-text);
+            margin-right: 15%;
+            border-left: 3px solid var(--accent);
+        }
+        .mensaje-historial .fecha {
+            display: block;
+            font-size: 0.7rem;
+            opacity: 0.6;
+            margin-top: 5px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="conversacion-container">
+        <div class="conversacion-header">
+            <h1>👤 {{ nombre }}</h1>
+            <a href="/historial">← Volver al historial</a>
+        </div>
+
+        {% for msg in mensajes %}
+            <div class="mensaje-historial {{ msg.rol }}">
+                {% if msg.rol == 'usuario' %}👤{% else %}🎭{% endif %}
+                {{ msg.texto }}
+                <span class="fecha">{{ msg.fecha }}</span>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

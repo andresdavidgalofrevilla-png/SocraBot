@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, jsonify
 import os
 import random
 import time
+import sqlite3
+from datetime import datetime
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
@@ -17,6 +19,109 @@ except ImportError:
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'socrabot-secret')
+
+# ===== BASE DE DATOS =====
+DB_PATH = 'socrabot.db'
+
+def init_db():
+    """Crea las tablas si no existen"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS conversaciones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            rol TEXT NOT NULL,
+            texto TEXT NOT NULL,
+            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT UNIQUE NOT NULL,
+            primera_visita TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ultima_visita TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+def registrar_usuario(nombre):
+    """Registra un usuario si es nuevo, o actualiza su última visita"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT id FROM usuarios WHERE nombre = ?', (nombre,))
+    existe = cursor.fetchone()
+    
+    if existe:
+        cursor.execute('UPDATE usuarios SET ultima_visita = CURRENT_TIMESTAMP WHERE nombre = ?', (nombre,))
+    else:
+        cursor.execute('INSERT INTO usuarios (nombre) VALUES (?)', (nombre,))
+    
+    conn.commit()
+    conn.close()
+
+def guardar_mensaje(nombre, rol, texto):
+    """Guarda un mensaje en la base de datos"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        'INSERT INTO conversaciones (nombre, rol, texto) VALUES (?, ?, ?)',
+        (nombre, rol, texto)
+    )
+    
+    conn.commit()
+    conn.close()
+
+def obtener_historial():
+    """Obtiene todas las conversaciones agrupadas por usuario"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM usuarios ORDER BY ultima_visita DESC')
+    usuarios = cursor.fetchall()
+    
+    historial = {}
+    for usuario in usuarios:
+        cursor.execute(
+            'SELECT rol, texto, fecha FROM conversaciones WHERE nombre = ? ORDER BY fecha ASC',
+            (usuario['nombre'],)
+        )
+        mensajes = cursor.fetchall()
+        
+        historial[usuario['nombre']] = {
+            'primera_visita': usuario['primera_visita'],
+            'ultima_visita': usuario['ultima_visita'],
+            'mensajes': [dict(m) for m in mensajes]
+        }
+    
+    conn.close()
+    return historial
+
+def obtener_historial_usuario(nombre):
+    """Obtiene el historial de un usuario específico"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        'SELECT rol, texto, fecha FROM conversaciones WHERE nombre = ? ORDER BY fecha ASC',
+        (nombre,)
+    )
+    mensajes = cursor.fetchall()
+    
+    conn.close()
+    return [dict(m) for m in mensajes]
+
+# Inicializar la BD al arrancar
+init_db()
 
 # ===== CONFIGURAR GROQ (lazy) =====
 GROQ_CLIENT = None
@@ -54,18 +159,18 @@ ESTRUCTURA OBLIGATORIA DE CADA RESPUESTA:
 - SEGUNDO: Una pregunta socrática que haga pensar.
 - TERCERO: Si el usuario ya respondió antes, lanza un contraargumento breve basado en su propia respuesta, para mostrarle una contradicción, y remata con otra pregunta.
 
-REGLA ESPECIAL: LA RECOMPENSA (EL DULCE)
-Eres MUY exigente. Solo concederás la victoria si la respuesta del usuario es EXCEPCIONAL:
+REGLA ESPECIAL: RECONOCER LA RAZÓN
+Eres MUY exigente. Solo reconocerás que el usuario tiene razón si su respuesta es EXCEPCIONAL:
 - Responde exactamente a lo que preguntaste.
 - Es coherente, profunda y bien fundamentada.
 - No cae en contradicciones ni evasivas.
 - Demuestra un avance real en el autoconocimiento.
 
 Si la respuesta es buena pero no excepcional: sigue con tu ironía y contraargumento, NO cedas.
-Si la respuesta es EXCEPCIONAL: reconoce la derrota con dignidad y entrega el "dulce" con una frase como:
-"Vaya, vaya... parece que hoy el alumno ha superado al maestro. Toma tu dulce, mi buen amigo. Has ganado esta vez. ¿Quieres seguir filosofando o prefieres saborear tu victoria?"
+Si la respuesta es EXCEPCIONAL: reconoce que el usuario tiene razón con dignidad y humildad, con una frase como:
+"Vaya, vaya... parece que hoy el alumno ha superado al maestro. Tienes razón, mi buen amigo. Me has convencido. ¿Quieres seguir filosofando o prefieres saborear tu victoria?"
 
-NUNCA concedas la victoria por respuestas mediocres. Solo los sabios merecen el dulce.
+NUNCA reconozcas la razón por respuestas mediocres. Solo los sabios merecen ese reconocimiento.
 
 ESTILO:
 - Usa frases como: "Mi buen amigo...", "Por los dioses...", "Vaya, vaya...", "Perdona mi ignorancia, pero...".
@@ -75,7 +180,7 @@ ESTILO:
 
 Usuario dice: {texto}
 
-Tu respuesta (irónica, breve, y con contraargumento o recompensa):"""
+Tu respuesta (irónica, breve, y con contraargumento o reconocimiento):"""
 
 # ===== FALLBACK =====
 PREGUNTAS_FALLBACK = [
@@ -106,11 +211,11 @@ def generar_respuesta_ia(texto_usuario, intentos=2):
             response = client.chat.completions.create(
                 model="qwen/qwen3.8-27b",
                 messages=[
-                    {"role": "system", "content": "Eres Sócrates, filósofo griego. Responde SIEMPRE con una pregunta socrática corta."},
+                    {"role": "system", "content": "Eres Sócrates, filósofo griego. Responde con ironía socrática breve."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.8,
-                max_tokens=150,
+                max_tokens=200,
                 timeout=30
             )
             respuesta = response.choices[0].message.content.strip()
@@ -134,19 +239,23 @@ def index():
 def preguntar():
     try:
         data = request.get_json()
-        
-        if not data:
-            return jsonify({'respuesta': 'Dime, ¿qué querías preguntarme?'}), 200
-        
         texto = data.get('texto', '').strip()
+        nombre = data.get('nombre', 'Anónimo').strip()
         
         if not texto:
-            return jsonify({'respuesta': 'El silencio también es una respuesta. ¿Qué piensas?'}), 200
+            return jsonify({'error': 'El texto no puede estar vacío'}), 400
         
+        # Registrar usuario (primera vez o actualizar visita)
+        registrar_usuario(nombre)
+        
+        # Guardar mensaje del usuario
+        guardar_mensaje(nombre, 'usuario', texto)
+        
+        # Generar respuesta
         respuesta = generar_respuesta_ia(texto)
         
-        if not respuesta:
-            respuesta = random.choice(PREGUNTAS_FALLBACK)
+        # Guardar respuesta de Sócrates
+        guardar_mensaje(nombre, 'socrates', respuesta)
         
         return jsonify({
             'respuesta': respuesta,
@@ -160,6 +269,22 @@ def preguntar():
             'tipo': 'error'
         }), 200
 
+@app.route('/historial')
+def ver_historial():
+    """Página para que el profe vea todas las conversaciones"""
+    historial = obtener_historial()
+    return render_template('historial.html', historial=historial)
+
+@app.route('/historial/<nombre>')
+def ver_historial_usuario(nombre):
+    """Ver la conversación de un usuario específico"""
+    mensajes = obtener_historial_usuario(nombre)
+    return render_template('historial_usuario.html', nombre=nombre, mensajes=mensajes)
+
+@app.route('/reset', methods=['POST'])
+def reset():
+    return jsonify({'mensaje': 'El diálogo ha sido reiniciado'})
+
 @app.route('/test-groq')
 def test_groq():
     """Endpoint de diagnóstico"""
@@ -169,14 +294,13 @@ def test_groq():
             return jsonify({
                 'status': 'error',
                 'mensaje': 'Cliente Groq no inicializado',
-                'api_key_presente': bool(os.getenv('GROQ_API_KEY')),
-                'api_key_preview': os.getenv('GROQ_API_KEY', '')[:12] + '...' if os.getenv('GROQ_API_KEY') else 'NO HAY KEY'
+                'api_key_presente': bool(os.getenv('GROQ_API_KEY'))
             })
         
         response = client.chat.completions.create(
             model="qwen/qwen3.8-27b",
             messages=[{"role": "user", "content": "Di 'hola' en una palabra"}],
-            max_tokens=20,
+            max_tokens=50,
             timeout=15
         )
         
@@ -192,13 +316,31 @@ def test_groq():
             'tipo_error': type(e).__name__
         })
 
-@app.route('/reset', methods=['POST'])
-def reset():
-    return jsonify({'mensaje': 'El diálogo ha sido reiniciado'})
+@app.route('/verificar-nombre', methods=['POST'])
+def verificar_nombre():
+    """Verifica si un nombre ya está registrado en la base de datos"""
+    try:
+        data = request.get_json()
+        nombre = data.get('nombre', '').strip()
+        
+        if not nombre:
+            return jsonify({'existe': False, 'error': 'Nombre vacío'}), 400
+        
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM usuarios WHERE nombre = ?', (nombre,))
+        existe = cursor.fetchone() is not None
+        conn.close()
+        
+        return jsonify({'existe': existe, 'nombre': nombre})
+    
+    except Exception as e:
+        print(f"❌ Error en /verificar-nombre: {e}")
+        return jsonify({'existe': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print("\n🏛️ SOCRABOT - CON GROQ")
+    print("\n🏛️ SOCRABOT - CON HISTORIAL Y GROQ")
     print(f"🤖 Groq: {'✅ Disponible' if GROQ_DISPONIBLE else '❌ No instalado'}")
     print(f"🌐 Abre: http://localhost:{port}")
     print("=" * 50)

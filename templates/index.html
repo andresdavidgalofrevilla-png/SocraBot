@@ -8,6 +8,33 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
 </head>
 <body>
+   <!-- ===== MODAL NOMBRE ===== -->
+    <div id="nombreModal" class="nombre-modal">
+        <div class="nombre-modal-contenido">
+            <div class="modal-icon">🏛️</div>
+            <h2>Bienvenido a SocraBot</h2>
+              <p>Antes de filosofar, dime tu nombre:</p>
+            <input type="text" id="nombreInput" placeholder="Tu nombre..." maxlength="50" autocomplete="off">
+            <button onclick="guardarNombre()" class="btn-primary">Empezar a filosofar</button>
+        
+          <div class="modal-divider">
+            <span>o</span>
+          </div>
+        
+          <button onclick="mostrarCargarNombre()" class="btn-secondary">
+            👤 Ya tengo un nombre registrado
+          </button>
+        
+         <!-- Formulario para cargar nombre existente (oculto por defecto) -->
+            <div id="cargarNombreForm" class="cargar-nombre-form" style="display: none;">
+                <input type="text" id="nombreExistente" placeholder="Escribe tu nombre registrado..." maxlength="50" autocomplete="off">
+                <button onclick="cargarNombreExistente()" class="btn-primary">Cargar mi nombre</button>
+                <button onclick="ocultarCargarNombre()" class="btn-link">← Volver</button>
+                <p id="errorCargarNombre" class="error-msg"></p>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== SÓCRATES FLOTANTE ===== -->
     <div class="socrates-float" id="socratesFloat">
         <div class="socrates-avatar" id="socratesAvatar">
@@ -19,92 +46,145 @@
         </div>
     </div>
 
-    <!-- ===== BOTÓN TEMA ===== -->
-    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">
-        <span class="theme-icon" id="themeIcon">🌙</span>
-    </button>
-
-    <div class="container">
-        <!-- HEADER -->
-        <div class="header">
-            <h1>🏛️ <span class="socrabot-highlight">SocraBot</span></h1>
-            <div class="subtitle">✨ El arte de la mayéutica digital</div>
-            <div class="philosophy-quote">
-                "Solo sé que nada sé" — El método socrático de preguntar
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <span class="logo-icon">🏛️</span>
+                <span class="logo-text">SocraBot</span>
             </div>
+            <button class="sidebar-toggle" onclick="toggleSidebar()" title="Cerrar menú">✕</button>
         </div>
 
-        <!-- CHAT -->
-        <div class="chat-box" id="chat">
-            <div class="message socrates fade-in">
-                Bienvenido, buscador de la verdad. 
-                <br><br>
-                "No enseñaré, solo preguntaré. Porque el conocimiento no se da, se despierta."
-                <br><br>
-                ¿Qué te gustaría explorar hoy?
-                <span class="socrates-label">— Sócrates, Atenas 399 a.C.</span>
-            </div>
+        <button class="new-chat-btn" onclick="limpiarChat()">
+            <span>✨</span> Nuevo diálogo
+        </button>
+
+        <nav class="sidebar-nav">
+            <a href="/" class="nav-item active">
+                <span>💬</span> Chat con Sócrates
+            </a>
+            <a href="/historial" class="nav-item">
+                <span>📚</span> Historial
+            </a>
+        </nav>
+
+        <div class="sidebar-section">
+            <div class="section-title">Acciones rápidas</div>
+            <button class="sidebar-action" onclick="ejemploFilosofico()">
+                <span>💡</span> Pensamiento filosófico
+            </button>
+            <button class="sidebar-action" onclick="ejemploDuda()">
+                <span>❓</span> Plantear duda
+            </button>
+            <button class="sidebar-action" onclick="exportarChat()">
+                <span>📥</span> Exportar diálogo
+            </button>
         </div>
 
-        <!-- INPUT -->
-        <div class="input-area">
-            <input 
-                type="text" 
-                id="userInput" 
-                placeholder="Escribe tu pensamiento, duda o afirmación..."
-                autocomplete="off"
-                maxlength="500"
-            >
-            <button onclick="dialogar()" id="sendButton">⚡ Preguntar</button>
+        <div class="sidebar-section">
+            <div class="section-title">Usuario</div>
+            <button class="sidebar-action" id="btnNombre" onclick="cambiarNombre()" ondblclick="cerrarSesion()" title="Clic: cambiar nombre | Doble clic: cerrar sesión">
+                <span>👤</span> <span id="nombreActual">Sin nombre</span>
+            </button>
+            <button class="sidebar-action" onclick="cerrarSesion()" title="Cerrar sesión para el siguiente estudiante">
+                <span>🚪</span> Cerrar sesión
+            </button>
         </div>
 
-        <!-- CONTROLES -->
-        <div class="controls">
-            <button onclick="limpiarChat()">🗑️ Limpiar diálogo</button>
-            <button onclick="ejemploFilosofico()">💡 Pensamiento filosófico</button>
-            <button onclick="ejemploDuda()">❓ Plantear duda</button>
-            <button onclick="exportarChat()">📥 Exportar diálogo</button>
-            <span class="badge">🧠 Mayéutica activa</span>
+        <div class="sidebar-section">
+            <div class="section-title">Apariencia</div>
+            <button class="sidebar-action" onclick="toggleTheme()">
+                <span id="themeIcon">🌙</span> <span id="themeLabel">Modo oscuro</span>
+            </button>
         </div>
 
-        <!-- MÁS OPCIONES -->
-        <div class="more-options">
+        <div class="sidebar-footer">
             <details>
-                <summary>📚 Más Opciones</summary>
+                <summary>📖 Más opciones</summary>
                 <div class="options-content">
-                    <div class="credits-section">
-                        <h3>👨‍💻 Desarrollado por:</h3>
-                        <ul class="credits-list">
-                            <li><strong>Andrés David Galofre Villa</strong> — Lógica socrática y backend</li>
-                            <li><strong>Maria Fernanda Serje</strong> — Diseño de interfaz y CSS</li>
-                            <li><strong>Miguel Muñoz</strong> — Integración y pruebas</li>
-                            <li><strong>Sharon Hernandez</strong> — Documentación y despliegue</li>
-                        </ul>
-                    </div>
-                    <div class="info-section">
-                        <h3>📖 Sobre SocraBot</h3>
-                        <p>Un proyecto educativo que implementa el método mayéutico de Sócrates 
-                        mediante inteligencia artificial para fomentar el pensamiento crítico.</p>
-                    </div>
-                    <div class="info-section">
-                        <h3>🛠️ Tecnologías utilizadas</h3>
-                        <ul class="credits-list">
-                            <li><strong>Python + Flask</strong> — Backend</li>
-                            <li><strong>HTML + CSS + JavaScript</strong> — Frontend</li>
-                            <li><strong>Groq + Qwen 3.8</strong> — Inteligencia Artificial</li>
-                            <li><strong>Render</strong> — Hosting en la nube</li>
-                        </ul>
-                    </div>
+                    <h4>👨‍💻 Desarrollado por:</h4>
+                    <ul>
+                        <li><strong>Andrés David Galofre Villa</strong> — Lógica socrática y backend</li>
+                        <li><strong>Maria Fernanda Serje</strong> — Diseño de interfaz y CSS</li>
+                        <li><strong>Miguel Angel Muñoz</strong> — Integración y Pruebas</li>
+                        <li><strong>Sharoll Michelle Hernandez</strong> — Documentación y Despliegue</li>
+                    </ul>
+                    <h4>🛠️ Tecnologías</h4>
+                    <ul>
+                        <li>Python + Flask</li>
+                        <li>Groq + Qwen 3.8</li>
+                        <li>SQLite</li>
+                        <li>Render</li>
+                    </ul>
                 </div>
             </details>
+            <div class="sidebar-credits">
+                Proyecto educativo — Semana de la Creatividad 2026
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===== CONTENIDO PRINCIPAL ===== -->
+    <main class="main-content">
+        <!-- Header móvil -->
+        <header class="top-bar">
+            <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+            <div class="top-bar-title">🏛️ SocraBot</div>
+            <div class="top-bar-user" id="topBarUser">👤</div>
+        </header>
+
+        <!-- Chat -->
+        <div class="chat-container" id="chat">
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-icon">🏛️</div>
+                <h1 class="welcome-title">
+                    <span class="socrabot-highlight">SocraBot</span>
+                </h1>
+                <p class="welcome-subtitle">El arte de la mayéutica digital</p>
+                <p class="welcome-quote">"Solo sé que nada sé"</p>
+                <div class="welcome-suggestions">
+                    <div class="suggestion-card" onclick="usarSugerencia('¿Qué es la felicidad?')">
+                        <span class="suggestion-icon">💭</span>
+                        <span>¿Qué es la felicidad?</span>
+                    </div>
+                    <div class="suggestion-card" onclick="usarSugerencia('Creo que el dinero da la felicidad')">
+                        <span class="suggestion-icon">💰</span>
+                        <span>Creo que el dinero da la felicidad</span>
+                    </div>
+                    <div class="suggestion-card" onclick="usarSugerencia('¿Cómo sé que existo?')">
+                        <span class="suggestion-icon">🧠</span>
+                        <span>¿Cómo sé que existo?</span>
+                    </div>
+                    <div class="suggestion-card" onclick="usarSugerencia('¿Qué es la virtud?')">
+                        <span class="suggestion-icon">⚖️</span>
+                        <span>¿Qué es la virtud?</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- FOOTER -->
-        <div class="footer">
-            <span>⚡</span> El conocimiento está en las preguntas, no en las respuestas <span>⚡</span>
-            <span class="footer-quote">— Inspirado en el método socrático</span>
+        <!-- Input fijo abajo -->
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea 
+                    id="userInput" 
+                    placeholder="Escribe tu pensamiento, duda o afirmación..."
+                    rows="1"
+                    maxlength="500"
+                ></textarea>
+                <button onclick="dialogar()" id="sendButton" title="Enviar">
+                    <span class="send-icon">➤</span>
+                </button>
+            </div>
+            <div class="input-footer">
+                SocraBot puede cometer errores. Verifica las respuestas.
+            </div>
         </div>
-    </div>
+    </main>
+
+    <!-- Overlay para móvil -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
